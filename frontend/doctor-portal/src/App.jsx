@@ -27,7 +27,11 @@ function LoginScreen() {
       }
       
       // Fetch associated Doctor profile using the userId
-      const doctorRes = await api.get(`/doctors/user/${response.data.id}`);
+      const doctorRes = await api.get(`/doctors/user/${response.data.id}`, {
+        headers: {
+          Authorization: `Bearer ${response.data.token}`
+        }
+      });
       
       login(response.data.token, response.data.role, {
         id: response.data.id,
