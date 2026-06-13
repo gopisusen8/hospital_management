@@ -123,7 +123,7 @@ export default function BookAppointment() {
                 <option value="">Select a Doctor</option>
                 {doctors.map(doc => (
                   <option key={doc.id} value={doc.id}>
-                    Dr. {doc.user.firstName} {doc.user.lastName} ({doc.specialization})
+                    Dr. {doc.user?.firstName || ''} {doc.user?.lastName || ''} ({doc.specialization})
                   </option>
                 ))}
               </select>

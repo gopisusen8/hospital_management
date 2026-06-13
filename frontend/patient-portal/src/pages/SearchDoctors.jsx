@@ -21,9 +21,9 @@ export default function SearchDoctors() {
   }, []);
 
   const filtered = doctors.filter(doc => {
-    const docName = `Dr. ${doc.user.firstName} ${doc.user.lastName}`;
+    const docName = `Dr. ${doc.user?.firstName || ''} ${doc.user?.lastName || ''}`;
     const matchesSearch = docName.toLowerCase().includes(search.toLowerCase()) || 
-                          doc.specialization.toLowerCase().includes(search.toLowerCase());
+                          doc.specialization?.toLowerCase().includes(search.toLowerCase());
     const matchesSpec = filterSpec === 'All' || doc.specialization === filterSpec;
     return matchesSearch && matchesSpec;
   });
@@ -85,7 +85,7 @@ export default function SearchDoctors() {
                 marginBottom: '1rem'
               }}>
                 <h3 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>
-                  Dr. {doc.user.firstName} {doc.user.lastName}
+                  Dr. {doc.user?.firstName || ''} {doc.user?.lastName || ''}
                 </h3>
                 <span style={{ fontSize: '0.9rem', color: '#ffb300' }}>★ {doc.rating || 5.0}</span>
               </div>
@@ -95,7 +95,7 @@ export default function SearchDoctors() {
             </div>
             <Link 
               to="/book-appointment" 
-              state={{ doctorId: doc.id, doctorName: `Dr. ${doc.user.firstName} ${doc.user.lastName}`, consultationFee: doc.consultationFee }} 
+              state={{ doctorId: doc.id, doctorName: `Dr. ${doc.user?.firstName || ''} ${doc.user?.lastName || ''}`, consultationFee: doc.consultationFee }} 
               className="btn-primary" 
               style={{ textDecoration: 'none', textAlign: 'center', marginTop: '1.5rem', display: 'block' }}
             >
