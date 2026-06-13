@@ -32,4 +32,8 @@ public class DoctorService {
     public List<Doctor> getDoctorsByDepartment(String department) {
         return doctorRepository.findByDepartment(department);
     }
+
+    public Optional<Doctor> getDoctorByUserId(Long userId) {
+        return doctorRepository.findByUserId(userId);
+    }
 }

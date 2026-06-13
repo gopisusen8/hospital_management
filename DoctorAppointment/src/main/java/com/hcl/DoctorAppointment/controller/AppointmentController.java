@@ -33,4 +33,9 @@ public class AppointmentController {
     public List<Appointment> getAppointmentsByDoctor(@PathVariable Long doctorId) {
         return appointmentService.getAppointmentsByDoctor(doctorId);
     }
+
+    @PostMapping("/{id}/status")
+    public ResponseEntity<Appointment> updateStatus(@PathVariable Long id, @RequestParam String status) {
+        return ResponseEntity.ok(appointmentService.updateStatus(id, status));
+    }
 }

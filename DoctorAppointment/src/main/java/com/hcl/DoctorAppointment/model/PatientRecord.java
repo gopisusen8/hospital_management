@@ -3,6 +3,7 @@ package com.hcl.DoctorAppointment.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import com.hcl.DoctorAppointment.util.CryptoConverter;
 
 @Entity
 @Table(name = "patient_records")
@@ -28,9 +29,11 @@ public class PatientRecord {
     @Column(name = "visit_date", nullable = false)
     private LocalDate visitDate;
 
+    @Convert(converter = CryptoConverter.class)
     @Column(columnDefinition = "TEXT")
     private String diagnosis;
 
+    @Convert(converter = CryptoConverter.class)
     @Column(columnDefinition = "TEXT")
     private String notes;
 }

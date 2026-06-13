@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Navbar, Footer, ProtectedRoute, login } from 'common';
+import { Navbar, Footer, ProtectedRoute, login, api } from 'common';
 
 // Import Pages
 import Dashboard from './pages/Dashboard';
@@ -13,12 +13,32 @@ import MySchedule from './pages/MySchedule';
 function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    login('dummy-doctor-jwt-token', 'ROLE_DOCTOR', { username, email: username + '@careflow.com' });
-    navigate('/dashboard');
+    try {
+      const response = await api.post('/auth/login', { username, password });
+      const { token, role, id, email } = response.data;
+      if (role !== 'ROLE_DOCTOR') {
+        setError('Unauthorized: Access restricted to Doctors.');
+        return;
+      }
+
+      // Fetch doctor entity ID
+      const docRes = await api.get(`/doctors/user/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      login(token, role, { id, username, email });
+      localStorage.setItem('doctor', JSON.stringify(docRes.data));
+      setError('');
+      navigate('/dashboard');
+    } catch (err) {
+      console.error(err);
+      setError('Invalid credentials or doctor profile missing');
+    }
   };
 
   return (
@@ -28,12 +48,26 @@ function LoginScreen() {
         <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
           Clinical Workstation & Care Planner
         </p>
+        {error && (
+          <div style={{
+            background: 'rgba(255, 8, 68, 0.15)',
+            border: '1px solid rgba(255, 8, 68, 0.4)',
+            color: '#ffb199',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            marginBottom: '1rem',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <label style={{ fontSize: '0.85rem', color: '#00e676' }}>Provider ID</label>
+            <label style={{ fontSize: '0.85rem', color: '#00e676' }}>Provider Username</label>
             <input 
               type="text" 
-              placeholder="e.g. drjenkins" 
+              placeholder="e.g. doctor1" 
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               required 

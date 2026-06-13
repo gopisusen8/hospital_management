@@ -1,7 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from 'common';
 
 export default function Dashboard() {
+  const [apptStats, setApptStats] = useState({ total: 0, confirmed: 0, completed: 0, pending: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const doc = JSON.parse(localStorage.getItem('doctor'));
+      if (doc?.id) {
+        api.get(`/appointments/doctor/${doc.id}`)
+          .then(res => {
+            const appts = res.data || [];
+            const confirmed = appts.filter(a => a.status?.toUpperCase() === 'CONFIRMED').length;
+            const completed = appts.filter(a => a.status?.toUpperCase() === 'COMPLETED').length;
+            const pending = appts.filter(a => a.status?.toUpperCase() === 'REQUESTED').length;
+            setApptStats({ total: appts.length, confirmed, completed, pending });
+            setLoading(false);
+          })
+          .catch(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    } catch (e) {
+      setLoading(false);
+    }
+  }, []);
+
+  const doctorName = (() => {
+    try {
+      const doc = JSON.parse(localStorage.getItem('doctor'));
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (doc) return doc.specialization || 'Doctor';
+      if (user) return user.username;
+    } catch (e) {}
+    return 'Doctor';
+  })();
+
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '0.5rem' }}>Clinical Dashboard</h1>
@@ -18,9 +54,25 @@ export default function Dashboard() {
       }}>
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <h3 style={{ marginTop: 0, color: '#00e676' }}>Today's Consultations</h3>
-            <p style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0.5rem 0' }}>8</p>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>3 slots remaining, 5 completed</p>
+            <h3 style={{ marginTop: 0, color: '#00e676' }}>Appointment Summary</h3>
+            {loading ? (
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>Loading...</p>
+            ) : (
+              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#00f2fe' }}>{apptStats.confirmed}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', margin: '0.25rem 0 0 0' }}>Confirmed</p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#ffb300' }}>{apptStats.pending}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', margin: '0.25rem 0 0 0' }}>Pending</p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#00e676' }}>{apptStats.completed}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', margin: '0.25rem 0 0 0' }}>Completed</p>
+                </div>
+              </div>
+            )}
           </div>
           <Link to="/appointments" style={{ color: '#00e676', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem', marginTop: '1rem' }}>
             Open Consult List &rarr;
@@ -30,8 +82,8 @@ export default function Dashboard() {
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
             <h3 style={{ marginTop: 0, color: '#00e676' }}>Active Schedule</h3>
-            <p style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0.5rem 0' }}>June 15 - June 19</p>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>25 open slots created for next week</p>
+            <p style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0.5rem 0' }}>Manage Your Slots</p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Create, view and delete availability time slots for patients to book.</p>
           </div>
           <Link to="/manage-availability" className="btn-primary" style={{ textAlign: 'center', textDecoration: 'none', display: 'block', marginTop: '1rem' }}>
             Edit Slots
@@ -40,12 +92,12 @@ export default function Dashboard() {
 
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <h3 style={{ marginTop: 0, color: '#00e676' }}>Clinical Audit Logs</h3>
-            <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>Last login: Today 08:30 AM</p>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>All updates logged automatically by system security</p>
+            <h3 style={{ marginTop: 0, color: '#00e676' }}>EHR & Patient Records</h3>
+            <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>All Records Encrypted</p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Diagnosis notes and clinical records are AES-128 encrypted at rest.</p>
           </div>
-          <Link to="/my-schedule" style={{ color: '#00e676', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem', marginTop: '1rem' }}>
-            Check Schedule Grid &rarr;
+          <Link to="/patient-history" style={{ color: '#00e676', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem', marginTop: '1rem' }}>
+            Search Patient History &rarr;
           </Link>
         </div>
       </div>
