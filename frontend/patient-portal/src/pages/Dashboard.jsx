@@ -5,6 +5,7 @@ import { api, getUser } from 'common';
 export default function Dashboard() {
   const [nextAppointment, setNextAppointment] = useState(null);
   const [unpaidBills, setUnpaidBills] = useState(0.0);
+  const [firstUnpaidBill, setFirstUnpaidBill] = useState(null);
   const [recentPrescription, setRecentPrescription] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,10 +27,14 @@ export default function Dashboard() {
 
         // 2. Fetch bills
         const billsRes = await api.get(`/billing/patient/${user.id}`);
-        const unpaidTotal = billsRes.data
-          .filter(b => b.status === 'UNPAID')
-          .reduce((sum, b) => sum + (b.amount + b.tax - b.discount), 0.0);
+        const unpaidList = billsRes.data.filter(b => b.status === 'UNPAID');
+        const unpaidTotal = unpaidList.reduce((sum, b) => sum + (b.amount + b.tax - b.discount), 0.0);
         setUnpaidBills(unpaidTotal);
+        if (unpaidList.length > 0) {
+          setFirstUnpaidBill(unpaidList[0]);
+        } else {
+          setFirstUnpaidBill(null);
+        }
 
         // 3. Fetch prescriptions
         const prescriptionsRes = await api.get(`/prescriptions/patient/${user.id}`);
@@ -113,8 +118,16 @@ export default function Dashboard() {
               {unpaidBills > 0 ? 'Pending medical invoices require settlement' : 'All invoices fully settled.'}
             </p>
           </div>
-          {unpaidBills > 0 && (
-            <Link to="/make-payment" className="btn-primary" style={{ textAlign: 'center', textDecoration: 'none', display: 'block', marginTop: '1rem' }}>
+          {unpaidBills > 0 && firstUnpaidBill && (
+            <Link 
+              to="/make-payment" 
+              state={{ 
+                billId: firstUnpaidBill.id, 
+                amount: firstUnpaidBill.amount + firstUnpaidBill.tax - firstUnpaidBill.discount 
+              }} 
+              className="btn-primary" 
+              style={{ textAlign: 'center', textDecoration: 'none', display: 'block', marginTop: '1rem' }}
+            >
               Pay Now
             </Link>
           )}

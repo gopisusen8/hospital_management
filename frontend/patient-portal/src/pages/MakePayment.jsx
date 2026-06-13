@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api } from 'common';
+import { api, getUser } from 'common';
 
 export default function MakePayment() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const billId = location.state?.billId || '';
-  const amount = location.state?.amount || 0.0;
+  const [billId, setBillId] = useState(location.state?.billId || '');
+  const [amount, setAmount] = useState(location.state?.amount || 0.0);
   
   const [method, setMethod] = useState('UPI');
   const [payment, setPayment] = useState(null);
@@ -15,6 +15,33 @@ export default function MakePayment() {
   const [txId, setTxId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingBill, setLoadingBill] = useState(!location.state?.billId);
+
+  // Auto-resolve unpaid bill if not provided in routing state
+  useEffect(() => {
+    if (!billId) {
+      const user = getUser();
+      if (user?.id) {
+        api.get(`/billing/patient/${user.id}`)
+          .then(res => {
+            const unpaid = res.data.filter(b => b.status === 'UNPAID');
+            if (unpaid.length > 0) {
+              setBillId(unpaid[0].id);
+              setAmount(unpaid[0].amount + unpaid[0].tax - unpaid[0].discount);
+            }
+            setLoadingBill(false);
+          })
+          .catch(err => {
+            console.error('Error fetching bills:', err);
+            setLoadingBill(false);
+          });
+      } else {
+        setLoadingBill(false);
+      }
+    } else {
+      setLoadingBill(false);
+    }
+  }, [billId]);
 
   // Initiate payment record on backend
   useEffect(() => {
@@ -46,10 +73,18 @@ export default function MakePayment() {
     }
   };
 
+  if (loadingBill) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
+        Checking outstanding invoices...
+      </div>
+    );
+  }
+
   if (!billId) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
-        No invoice selected for payment. Please go to <a href="/billing-history" style={{ color: '#00f2fe' }}>Billing History</a>.
+        No outstanding invoices found. Please go to <a href="/billing-history" style={{ color: '#00f2fe' }}>Billing History</a>.
       </div>
     );
   }

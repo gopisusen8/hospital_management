@@ -22,6 +22,36 @@ export default function MyAppointments() {
       });
   }, [user?.id]);
 
+  const handleCancel = async (id, startDateTime) => {
+    const appDate = new Date(startDateTime);
+    appDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = appDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 2) {
+      alert("Cancellation is only allowed at least 2 days prior to the appointment date.");
+      return;
+    }
+    
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) {
+      return;
+    }
+    
+    try {
+      await api.put(`/appointments/${id}/status`, null, {
+        params: { status: 'CANCELLED' }
+      });
+      setAppointments(prev => prev.map(app => 
+        app.id === id ? { ...app, status: 'CANCELLED' } : app
+      ));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to cancel appointment");
+    }
+  };
+
   const getStatusStyle = (status) => {
     switch (status) {
       case 'CONFIRMED': return { color: '#00f2fe', background: 'rgba(0,242,254,0.1)', border: '1px solid rgba(0,242,254,0.3)' };
@@ -87,6 +117,24 @@ export default function MyAppointments() {
                 fontWeight: 'bold',
                 ...getStatusStyle(app.status)
               }}>{app.status}</span>
+              
+              {app.status === 'CONFIRMED' && (
+                <button
+                  onClick={() => handleCancel(app.id, app.slot.startDateTime)}
+                  className="btn-secondary"
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    fontSize: '0.85rem',
+                    background: 'rgba(255, 23, 68, 0.1)',
+                    border: '1px solid rgba(255, 23, 68, 0.3)',
+                    color: '#ff1744',
+                    cursor: 'pointer',
+                    borderRadius: '8px'
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </div>
         ))}
