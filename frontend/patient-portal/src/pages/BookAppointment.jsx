@@ -1,23 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { api, getUser } from 'common';
 
 export default function BookAppointment() {
   const location = useLocation();
   const navigate = useNavigate();
   
   const initialDoctorId = location.state?.doctorId || '';
+  
+  const [doctors, setDoctors] = useState([]);
   const [doctorId, setDoctorId] = useState(initialDoctorId);
-  const [slot, setSlot] = useState('');
+  const [slots, setSlots] = useState([]);
+  const [slotId, setSlotId] = useState('');
   const [reason, setReason] = useState('');
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
-  const handleBook = (e) => {
+  // Fetch doctors list
+  useEffect(() => {
+    api.get('/doctors')
+      .then(res => setDoctors(res.data))
+      .catch(err => console.error('Error fetching doctors:', err));
+  }, []);
+
+  // Fetch slots when doctor changes
+  useEffect(() => {
+    if (!doctorId) {
+      setSlots([]);
+      return;
+    }
+    setLoadingSlots(true);
+    setError('');
+    api.get(`/availability-slots/doctor/${doctorId}/available`)
+      .then(res => {
+        setSlots(res.data);
+        setLoadingSlots(false);
+      })
+      .catch(err => {
+        console.error('Error fetching slots:', err);
+        setLoadingSlots(false);
+      });
+  }, [doctorId]);
+
+  const handleBook = async (e) => {
     e.preventDefault();
-    // Simulate booking
-    setSuccess(true);
-    setTimeout(() => {
-      navigate('/my-appointments');
-    }, 2000);
+    setError('');
+    const user = getUser();
+    if (!user || !user.id) {
+      setError('Please log in again.');
+      return;
+    }
+
+    try {
+      await api.post('/appointments', {
+        patient: { id: user.id },
+        doctor: { id: parseInt(doctorId) },
+        slot: { id: parseInt(slotId) },
+        reason: reason
+      });
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/make-payment');
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Double booking collision or server error occurred.');
+    }
+  };
+
+  const formatSlotTime = (startStr) => {
+    try {
+      const date = new Date(startStr);
+      return date.toLocaleString();
+    } catch (e) {
+      return startStr;
+    }
   };
 
   return (
@@ -25,6 +83,21 @@ export default function BookAppointment() {
       <div className="glass-panel">
         <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2rem', marginTop: 0, marginBottom: '1.5rem', textAlign: 'center' }}>Book Appointment</h1>
         
+        {error && (
+          <div style={{
+            background: 'rgba(255, 8, 68, 0.15)',
+            border: '1px solid rgba(255, 8, 68, 0.4)',
+            color: '#ffb199',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            marginBottom: '1rem',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
         {success ? (
           <div style={{
             background: 'rgba(0, 242, 254, 0.15)',
@@ -34,32 +107,39 @@ export default function BookAppointment() {
             textAlign: 'center',
             color: '#00f2fe'
           }}>
-            <h3 style={{ margin: 0 }}>Booking Successful!</h3>
+            <h3 style={{ margin: 0 }}>Booking Initiated!</h3>
             <p style={{ margin: '0.5rem 0 0 0', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
-              Redirecting to your appointments checklist...
+              Redirecting to payments workspace...
             </p>
           </div>
         ) : (
           <form onSubmit={handleBook} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ fontSize: '0.85rem', color: '#00f2fe' }}>Doctor</label>
-              <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)} required>
+              <select value={doctorId} onChange={(e) => { setDoctorId(e.target.value); setSlotId(''); }} required>
                 <option value="">Select a Doctor</option>
-                <option value="1">Dr. Sarah Jenkins (Cardiology)</option>
-                <option value="2">Dr. Marcus Vance (Neurology)</option>
-                <option value="3">Dr. Anita Patel (Pediatrics)</option>
-                <option value="4">Dr. David Kim (Orthopedics)</option>
+                {doctors.map(doc => {
+                  const name = doc.user ? (`Dr. ${doc.user.firstName} ${doc.user.lastName}`) : 'Dr. Specialist';
+                  return (
+                    <option key={doc.id} value={doc.id}>
+                      {name} ({doc.specialization})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ fontSize: '0.85rem', color: '#00f2fe' }}>Available Slot</label>
-              <select value={slot} onChange={(e) => setSlot(e.target.value)} required>
-                <option value="">Select an Availability Slot</option>
-                <option value="slot1">June 15, 2026 at 09:00 AM</option>
-                <option value="slot2">June 15, 2026 at 10:30 AM</option>
-                <option value="slot3">June 16, 2026 at 02:00 PM</option>
-                <option value="slot4">June 17, 2026 at 11:00 AM</option>
+              <select value={slotId} onChange={(e) => setSlotId(e.target.value)} required disabled={!doctorId || loadingSlots}>
+                <option value="">
+                  {loadingSlots ? 'Loading slots...' : !doctorId ? 'Select a doctor first' : slots.length === 0 ? 'No slots available' : 'Select an Availability Slot'}
+                </option>
+                {slots.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {formatSlotTime(s.startDateTime)}
+                  </option>
+                ))}
               </select>
             </div>
 

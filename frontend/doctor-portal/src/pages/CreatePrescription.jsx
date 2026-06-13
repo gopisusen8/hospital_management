@@ -1,22 +1,65 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { api } from 'common';
 
 export default function CreatePrescription() {
   const location = useLocation();
   const navigate = useNavigate();
 
   const initialName = location.state?.patientName || '';
+  const patientId = location.state?.patientId || null;
+  const appointmentId = location.state?.appointmentId || null;
+
   const [patientName, setPatientName] = useState(initialName);
   const [medications, setMedications] = useState('');
   const [notes, setNotes] = useState('');
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const getDoctorId = () => {
+    try {
+      const doc = JSON.parse(localStorage.getItem('doctor'));
+      return doc?.id;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSuccess(true);
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 2000);
+    setError('');
+
+    const docId = getDoctorId();
+    if (!docId) {
+      setError('Doctor profile not loaded properly.');
+      return;
+    }
+    if (!patientId || !appointmentId) {
+      setError('Patient and consultation details missing.');
+      return;
+    }
+
+    const pad = (n) => n < 10 ? '0' + n : n;
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+    try {
+      await api.post('/prescriptions', {
+        appointment: { id: appointmentId },
+        patient: { id: patientId },
+        doctor: { id: docId },
+        date: dateStr,
+        isActive: true,
+        instructions: medications + (notes ? `\n\nClinical Notes:\n${notes}` : '')
+      });
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/appointments');
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to publish digital prescription.');
+    }
   };
 
   return (
@@ -25,6 +68,21 @@ export default function CreatePrescription() {
         <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2rem', marginTop: 0, marginBottom: '1.5rem', textAlign: 'center' }}>
           Issue Prescription
         </h1>
+
+        {error && (
+          <div style={{
+            background: 'rgba(255, 8, 68, 0.15)',
+            border: '1px solid rgba(255, 8, 68, 0.4)',
+            color: '#ffb199',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            marginBottom: '1.5rem',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
 
         {success ? (
           <div style={{
@@ -48,7 +106,7 @@ export default function CreatePrescription() {
                 type="text" 
                 placeholder="e.g. John Doe" 
                 value={patientName} 
-                onChange={(e) => setPatientName(e.target.value)} 
+                disabled
                 required 
               />
             </div>

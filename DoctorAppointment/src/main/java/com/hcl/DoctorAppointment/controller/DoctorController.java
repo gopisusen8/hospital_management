@@ -30,4 +30,11 @@ public class DoctorController {
     public List<Doctor> getDoctorsBySpecialization(@PathVariable String spec) {
         return doctorService.getDoctorsBySpecialization(spec);
     }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<Doctor> getDoctorByUserId(@PathVariable Long userId) {
+        return doctorService.getDoctorByUserId(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
