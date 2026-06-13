@@ -188,7 +188,19 @@ export default function ManageDoctors() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ fontSize: '0.85rem' }}>Department</label>
-              <input type="text" placeholder="e.g. Heart Clinic" value={dept} onChange={(e) => setDept(e.target.value)} required />
+              <select value={dept} onChange={(e) => setDept(e.target.value)} required>
+                <option value="" disabled style={{ background: '#121212', color: 'rgba(255,255,255,0.4)' }}>Select Department</option>
+                <option value="Cardiology Center" style={{ background: '#121212' }}>Cardiology Center</option>
+                <option value="Pediatrics" style={{ background: '#121212' }}>Pediatrics</option>
+                <option value="Neurology Clinic" style={{ background: '#121212' }}>Neurology Clinic</option>
+                <option value="Orthopedic Center" style={{ background: '#121212' }}>Orthopedic Center</option>
+                <option value="Dermatology Clinic" style={{ background: '#121212' }}>Dermatology Clinic</option>
+                <option value="General Outpatient" style={{ background: '#121212' }}>General Outpatient</option>
+                <option value="Oncology Department" style={{ background: '#121212' }}>Oncology Department</option>
+                <option value="Gastroenterology Unit" style={{ background: '#121212' }}>Gastroenterology Unit</option>
+                <option value="Mental Health Clinic" style={{ background: '#121212' }}>Mental Health Clinic</option>
+                <option value="Endocrinology Clinic" style={{ background: '#121212' }}>Endocrinology Clinic</option>
+              </select>
             </div>
 
             <button type="submit" className="btn-primary" style={{ marginTop: '0.5rem' }}>Save Provider</button>

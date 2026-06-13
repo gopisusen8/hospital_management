@@ -46,7 +46,7 @@ export default function Navbar({ portalName }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        <Link to="/" style={{ color: '#fff', textDecoration: 'none', fontSize: '0.95rem', transition: 'color 0.2s' }}>Home</Link>
+        <Link to={role ? "/dashboard" : "/"} style={{ color: '#fff', textDecoration: 'none', fontSize: '0.95rem', transition: 'color 0.2s' }}>Home</Link>
         {role && (
           <>
             <span style={{

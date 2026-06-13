@@ -87,6 +87,42 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .build();
         doctorRepository.save(doctor);
 
+        // Additional 9 Doctor Users and profiles
+        String[][] doctorData = {
+            {"doctor2", "Michael", "Chang", "Pediatrics", "Pediatrics", "Specialist in childhood health and development with 8 years of clinical experience.", "140.0"},
+            {"doctor3", "Emily", "Ross", "Neurology", "Neurology Clinic", "Expert in brain and central nervous system disorders, fellowship trained.", "180.0"},
+            {"doctor4", "David", "Miller", "Orthopedics", "Orthopedic Center", "Specializes in musculoskeletal system surgery and sports medicine.", "160.0"},
+            {"doctor5", "Jessica", "Taylor", "Dermatology", "Dermatology Clinic", "Focused on medical and cosmetic skin disorders and skin cancer screenings.", "150.0"},
+            {"doctor6", "James", "Wilson", "General Medicine", "General Outpatient", "Family practitioner dedicated to general health, wellness, and preventative care.", "100.0"},
+            {"doctor7", "Linda", "Martinez", "Oncology", "Oncology Department", "Compassionate oncologist dedicated to diagnosing and treating cancer patients.", "200.0"},
+            {"doctor8", "Robert", "Anderson", "Gastroenterology", "Gastroenterology Unit", "Specializes in digestive systems, endoscopy, and liver disease management.", "170.0"},
+            {"doctor9", "Karen", "Thomas", "Psychiatry", "Mental Health Clinic", "Board-certified psychiatrist specializing in adult clinical psychiatry.", "160.0"},
+            {"doctor10", "William", "White", "Endocrinology", "Endocrinology Clinic", "Expert in hormone imbalances, diabetes management, and metabolic health.", "155.0"}
+        };
+
+        for (String[] doc : doctorData) {
+            User extraDocUser = User.builder()
+                    .username(doc[0])
+                    .password(passwordEncoder.encode("password123"))
+                    .email(doc[0] + "@careflow.com")
+                    .role(Role.ROLE_DOCTOR)
+                    .firstName(doc[1])
+                    .lastName(doc[2])
+                    .phone("+1555" + (2000000 + (int)(Math.random() * 8000000)))
+                    .build();
+            userRepository.save(extraDocUser);
+
+            Doctor extraDoctor = Doctor.builder()
+                    .user(extraDocUser)
+                    .specialization(doc[3])
+                    .department(doc[4])
+                    .bio(doc[5])
+                    .consultationFee(Double.parseDouble(doc[6]))
+                    .rating(4.5 + Math.random() * 0.5)
+                    .build();
+            doctorRepository.save(extraDoctor);
+        }
+
         // 3. Create Slots
         AvailabilitySlot slot1 = AvailabilitySlot.builder()
                 .doctor(doctor)
