@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+
+import AdminDashboard from './AdminDashboard';
 import { api, getUser } from 'common';
 
 export default function Dashboard() {

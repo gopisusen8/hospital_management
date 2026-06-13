@@ -4,6 +4,7 @@ import { Navbar, Footer, ProtectedRoute, login, isAuthenticated, api } from 'com
 
 // Import Pages
 import Dashboard from './pages/Dashboard';
+import UnifiedHome from './pages/UnifiedHome';
 import SearchDoctors from './pages/SearchDoctors';
 import BookAppointment from './pages/BookAppointment';
 import MyAppointments from './pages/MyAppointments';
@@ -29,7 +30,7 @@ function LoginScreen() {
       }
       login(token, role, { id, username, email });
       setError('');
-      navigate('/dashboard');
+      navigate('/home');
     } catch (err) {
       console.error(err);
       setError('Invalid username or password');
@@ -139,6 +140,7 @@ export default function App() {
                 <MakePayment />
               </ProtectedRoute>
             } />
+<Route path="/home" element={<UnifiedHome />} />
           </Routes>
         </main>
         <Footer />
