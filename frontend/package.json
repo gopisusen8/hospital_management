@@ -1,0 +1,20 @@
+{
+  "name": "hospital-management-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "common",
+    "patient-portal",
+    "doctor-portal",
+    "admin-panel"
+  ],
+  "scripts": {
+    "dev:patient": "npm run dev -w patient-portal",
+    "dev:doctor": "npm run dev -w doctor-portal",
+    "dev:admin": "npm run dev -w admin-panel",
+    "build:patient": "npm run build -w patient-portal",
+    "build:doctor": "npm run build -w doctor-portal",
+    "build:admin": "npm run build -w admin-panel",
+    "build:all": "npm run build --workspaces --if-present"
+  }
+}
