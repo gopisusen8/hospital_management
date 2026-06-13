@@ -1,19 +1,51 @@
-import React from 'react';
-
-const DUMMY_INVOICES = [
-  { id: 101, patientName: 'John Doe', amount: 150.00, status: 'UNPAID', date: 'June 04, 2026' },
-  { id: 102, patientName: 'Alice Green', amount: 250.00, status: 'PAID', date: 'May 12, 2026' },
-  { id: 103, patientName: 'Robert Vance', amount: 350.00, status: 'PAID', date: 'April 20, 2026' }
-];
+import React, { useState, useEffect } from 'react';
+import { api } from 'common';
 
 export default function BillingOverview() {
-  const totalRevenue = DUMMY_INVOICES
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/billing');
+      setInvoices(res.data);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load billing history invoices.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalRevenue = invoices
     .filter(i => i.status === 'PAID')
     .reduce((sum, i) => sum + i.amount, 0);
 
-  const outstanding = DUMMY_INVOICES
+  const outstanding = invoices
     .filter(i => i.status === 'UNPAID')
     .reduce((sum, i) => sum + i.amount, 0);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
+        Loading billing details...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#ff1744' }}>
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -40,7 +72,7 @@ export default function BillingOverview() {
       <div className="glass-panel">
         <h3 style={{ margin: '0 0 1.25rem 0', color: '#ba68c8' }}>Recent Patient Invoices</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {DUMMY_INVOICES.map(inv => (
+          {invoices.map(inv => (
             <div key={inv.id} style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -51,9 +83,11 @@ export default function BillingOverview() {
               borderRadius: '8px'
             }}>
               <div>
-                <h4 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>{inv.patientName}</h4>
+                <h4 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>
+                  {inv.patient ? `${inv.patient.firstName} ${inv.patient.lastName}` : 'Unknown Patient'}
+                </h4>
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
-                  Invoice #{inv.id} | Issued: {inv.date}
+                  Invoice #{inv.id} | Due Date: {inv.dueDate}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -70,6 +104,9 @@ export default function BillingOverview() {
               </div>
             </div>
           ))}
+          {invoices.length === 0 && (
+            <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>No patient invoices found.</p>
+          )}
         </div>
       </div>
     </div>

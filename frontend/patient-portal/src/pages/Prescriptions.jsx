@@ -1,17 +1,31 @@
-import React from 'react';
-
-const DUMMY_PRESCRIPTIONS = [
-  { id: 1, date: 'May 04, 2026', doctorName: 'Dr. Anita Patel', status: 'Active', instructions: 'Amoxicillin 500mg - 3 times daily for 7 days. Take with food.' },
-  { id: 2, date: 'Oct 12, 2025', doctorName: 'Dr. Sarah Jenkins', status: 'Expired', instructions: 'Lisinopril 10mg - Once daily in the morning. Monitor BP.' }
-];
+import React, { useState, useEffect } from 'react';
+import { api, getUser } from 'common';
 
 export default function Prescriptions() {
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const user = getUser();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    api.get(`/prescriptions/patient/${user.id}`)
+      .then(res => {
+        setPrescriptions(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching prescriptions:', err);
+        setLoading(false);
+      });
+  }, [user?.id]);
+
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '1.5rem' }}>My Prescriptions</h1>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {DUMMY_PRESCRIPTIONS.map(rx => (
+        {prescriptions.map(rx => (
           <div key={rx.id} className="glass-card">
             <div style={{
               display: 'flex',
@@ -23,19 +37,23 @@ export default function Prescriptions() {
             }}>
               <div>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>Prescribed by</p>
-                <h3 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>{rx.doctorName}</h3>
+                <h3 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>
+                  Dr. {rx.doctor.user.firstName} {rx.doctor.user.lastName}
+                </h3>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}>{rx.date}</span>
+                <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}>
+                  {new Date(rx.date).toLocaleDateString()}
+                </span>
                 <span style={{
                   padding: '0.2rem 0.5rem',
                   borderRadius: '10px',
                   fontSize: '0.75rem',
                   fontWeight: 'bold',
-                  background: rx.status === 'Active' ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255,255,255,0.05)',
-                  color: rx.status === 'Active' ? '#00e676' : 'rgba(255,255,255,0.5)',
-                  border: rx.status === 'Active' ? '1px solid rgba(0, 230, 118, 0.3)' : '1px solid rgba(255,255,255,0.1)'
-                }}>{rx.status}</span>
+                  background: rx.active ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255,255,255,0.05)',
+                  color: rx.active ? '#00e676' : 'rgba(255,255,255,0.5)',
+                  border: rx.active ? '1px solid rgba(0, 230, 118, 0.3)' : '1px solid rgba(255,255,255,0.1)'
+                }}>{rx.active ? 'Active' : 'Expired'}</span>
               </div>
             </div>
 
@@ -48,10 +66,17 @@ export default function Prescriptions() {
               fontSize: '0.95rem'
             }}>
               <strong>Medications & Instructions:</strong>
-              <p style={{ margin: '0.5rem 0 0 0', whiteSpace: 'pre-line', lineHeight: '1.6' }}>{rx.instructions}</p>
+              <p style={{ margin: '0.5rem 0 0 0', whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+                {rx.instructions}
+              </p>
             </div>
           </div>
         ))}
+        {prescriptions.length === 0 && (
+          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', marginTop: '2rem' }}>
+            No prescriptions logged.
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,22 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { api, getUser } from 'common';
 
 export default function CreatePrescription() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const initialName = location.state?.patientName || '';
-  const [patientName, setPatientName] = useState(initialName);
+  const appointment = location.state?.appointment || null;
+  const initialPatientName = appointment?.patient 
+    ? `${appointment.patient.firstName} ${appointment.patient.lastName}` 
+    : '';
+
+  const [patientId, setPatientId] = useState(appointment?.patient?.id || '');
+  const [patients, setPatients] = useState([]);
   const [medications, setMedications] = useState('');
   const [notes, setNotes] = useState('');
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const currentUser = getUser();
+  const doctorId = currentUser?.doctorId;
+
+  useEffect(() => {
+    if (!appointment) {
+      // Fetch all patients for standalone prescription creation
+      fetchPatients();
+    }
+  }, [appointment]);
+
+  const fetchPatients = async () => {
+    try {
+      const res = await api.get('/patients');
+      setPatients(res.data);
+      if (res.data.length > 0) {
+        setPatientId(res.data[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to load patients', err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSuccess(true);
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 2000);
+    setError('');
+    
+    if (!patientId) {
+      setError('Please select a patient.');
+      return;
+    }
+    if (!doctorId) {
+      setError('Doctor profile not found.');
+      return;
+    }
+
+    try {
+      const payload = {
+        appointment: appointment ? { id: appointment.id } : null,
+        patient: { id: parseInt(patientId) },
+        doctor: { id: doctorId },
+        date: new Date().toISOString().split('T')[0],
+        instructions: `Medications:\n${medications}\n\nNotes:\n${notes}`,
+        isActive: true
+      };
+
+      await api.post('/prescriptions', payload);
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to publish prescription');
+      console.error(err);
+    }
   };
 
   return (
@@ -25,6 +80,21 @@ export default function CreatePrescription() {
         <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2rem', marginTop: 0, marginBottom: '1.5rem', textAlign: 'center' }}>
           Issue Prescription
         </h1>
+
+        {error && (
+          <div style={{
+            background: 'rgba(255, 23, 68, 0.1)',
+            border: '1px solid rgba(255, 23, 68, 0.3)',
+            borderRadius: '8px',
+            padding: '0.75rem',
+            color: '#ff1744',
+            marginBottom: '1rem',
+            fontSize: '0.9rem',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
 
         {success ? (
           <div style={{
@@ -44,13 +114,27 @@ export default function CreatePrescription() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ fontSize: '0.85rem', color: '#00e676' }}>Patient Name</label>
-              <input 
-                type="text" 
-                placeholder="e.g. John Doe" 
-                value={patientName} 
-                onChange={(e) => setPatientName(e.target.value)} 
-                required 
-              />
+              {appointment ? (
+                <input 
+                  type="text" 
+                  value={initialPatientName} 
+                  disabled 
+                  style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }} 
+                />
+              ) : (
+                <select 
+                  value={patientId} 
+                  onChange={(e) => setPatientId(e.target.value)}
+                  required
+                >
+                  <option value="">-- Select Patient --</option>
+                  {patients.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.firstName} {p.lastName} ({p.username})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>

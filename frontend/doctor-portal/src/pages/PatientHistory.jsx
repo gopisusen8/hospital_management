@@ -1,18 +1,59 @@
-import React, { useState } from 'react';
-
-const DUMMY_HISTORY = [
-  { id: 1, patientName: 'John Doe', visitDate: 'May 04, 2026', diagnosis: 'Acute Bronchitis', provider: 'Dr. Anita Patel', notes: 'Persistent dry cough. Prescribed Amoxicillin.' },
-  { id: 2, patientName: 'John Doe', visitDate: 'Oct 12, 2025', diagnosis: 'Mild Hypertension', provider: 'Dr. Sarah Jenkins', notes: 'BP elevated. Recommended sodium reduction.' },
-  { id: 3, patientName: 'Emily Smith', visitDate: 'Jan 10, 2026', diagnosis: 'Common Cold', provider: 'Dr. Anita Patel', notes: 'Mild congestion. Recommended fluids and rest.' }
-];
+import React, { useState, useEffect } from 'react';
+import { api } from 'common';
 
 export default function PatientHistory() {
   const [search, setSearch] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState('John Doe');
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const filtered = DUMMY_HISTORY.filter(rec => 
-    rec.patientName.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  const fetchRecords = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/patient-records');
+      setRecords(res.data);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load patient records history.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPatientFullName = (patient) => {
+    if (!patient) return 'Unknown Patient';
+    return `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || patient.username;
+  };
+
+  const getDoctorFullName = (doctor) => {
+    if (!doctor || !doctor.user) return 'Unknown Physician';
+    return `Dr. ${doctor.user.firstName || ''} ${doctor.user.lastName || ''}`.trim();
+  };
+
+  const filtered = records.filter(rec => {
+    const fullName = getPatientFullName(rec.patient).toLowerCase();
+    return fullName.includes(search.toLowerCase());
+  });
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
+        Loading patient records...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#ff1744' }}>
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -40,12 +81,20 @@ export default function PatientHistory() {
               marginBottom: '0.75rem'
             }}>
               <div>
-                <h3 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>{rec.patientName}</h3>
-                <span style={{ fontSize: '0.85rem', color: '#00e676', fontWeight: 600 }}>{rec.diagnosis}</span>
+                <h3 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>
+                  {getPatientFullName(rec.patient)}
+                </h3>
+                <span style={{ fontSize: '0.85rem', color: '#00e676', fontWeight: 600 }}>
+                  {rec.diagnosis}
+                </span>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>{rec.visitDate}</p>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>Logged by {rec.provider}</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
+                  {rec.visitDate}
+                </p>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                  Logged by {getDoctorFullName(rec.doctor)}
+                </p>
               </div>
             </div>
             <p style={{ margin: 0, fontSize: '0.95rem', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>

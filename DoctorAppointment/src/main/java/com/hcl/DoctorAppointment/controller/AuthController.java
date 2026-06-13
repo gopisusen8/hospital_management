@@ -60,6 +60,9 @@ public class AuthController {
         ));
     }
 
+    @Autowired
+    private com.hcl.DoctorAppointment.repository.DoctorRepository doctorRepository;
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody User signUpUser) {
         if (userRepository.existsByUsername(signUpUser.getUsername())) {
@@ -72,6 +75,17 @@ public class AuthController {
 
         signUpUser.setPassword(passwordEncoder.encode(signUpUser.getPassword()));
         User result = userRepository.save(signUpUser);
+
+        if (result.getRole() == com.hcl.DoctorAppointment.model.Role.ROLE_DOCTOR) {
+            com.hcl.DoctorAppointment.model.Doctor doctor = com.hcl.DoctorAppointment.model.Doctor.builder()
+                    .user(result)
+                    .specialization("General Medicine")
+                    .department("General Outpatient")
+                    .consultationFee(100.0)
+                    .rating(5.0)
+                    .build();
+            doctorRepository.save(doctor);
+        }
 
         return ResponseEntity.ok("User registered successfully");
     }

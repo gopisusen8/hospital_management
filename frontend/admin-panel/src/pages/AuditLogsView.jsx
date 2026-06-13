@@ -1,17 +1,59 @@
-import React, { useState } from 'react';
-
-const DUMMY_AUDITS = [
-  { id: 1, actor: 'systemadmin', action: 'ONBOARD_DOCTOR', details: 'Added Dr. Marcus Vance to Neurology', ipAddress: '192.168.1.45', timestamp: 'Today 10:20 AM' },
-  { id: 2, actor: 'drjenkins', action: 'WRITE_PRESCRIPTION', details: 'Prescribed Lisinopril to John Doe', ipAddress: '192.168.1.102', timestamp: 'Today 09:45 AM' },
-  { id: 3, actor: 'john_doe', action: 'INITIATE_PAYMENT', details: 'Simulated payment initiation for Invoice #101', ipAddress: '192.168.1.201', timestamp: 'Yesterday 04:12 PM' }
-];
+import React, { useState, useEffect } from 'react';
+import { api } from 'common';
 
 export default function AuditLogsView() {
+  const [audits, setAudits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filterAction, setFilterAction] = useState('All');
 
-  const filtered = DUMMY_AUDITS.filter(log => 
+  useEffect(() => {
+    fetchAudits();
+  }, []);
+
+  const fetchAudits = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/audit-logs');
+      // Sort audits by newest first
+      const sorted = res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setAudits(sorted);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load system audit logs.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = audits.filter(log => 
     filterAction === 'All' || log.action === filterAction
   );
+
+  const formatDateTime = (dateTimeStr) => {
+    if (!dateTimeStr) return '';
+    const date = new Date(dateTimeStr);
+    return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
+        Loading system audit trail...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#ff1744' }}>
+        {error}
+      </div>
+    );
+  }
+
+  // Get unique actions for filter options dynamically
+  const uniqueActions = Array.from(new Set(audits.map(a => a.action)));
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -25,9 +67,9 @@ export default function AuditLogsView() {
           onChange={(e) => setFilterAction(e.target.value)}
         >
           <option value="All">All Actions</option>
-          <option value="ONBOARD_DOCTOR">ONBOARD_DOCTOR</option>
-          <option value="WRITE_PRESCRIPTION">WRITE_PRESCRIPTION</option>
-          <option value="INITIATE_PAYMENT">INITIATE_PAYMENT</option>
+          {uniqueActions.map(act => (
+            <option key={act} value={act}>{act}</option>
+          ))}
         </select>
       </div>
 
@@ -57,11 +99,16 @@ export default function AuditLogsView() {
             </div>
             
             <div style={{ textAlign: 'right', fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)' }}>
-              <p style={{ margin: 0 }}>{log.timestamp}</p>
-              <p style={{ margin: 0 }}>IP: {log.ipAddress}</p>
+              <p style={{ margin: 0 }}>{formatDateTime(log.timestamp)}</p>
+              {log.ipAddress && <p style={{ margin: 0 }}>IP: {log.ipAddress}</p>}
             </div>
           </div>
         ))}
+        {filtered.length === 0 && (
+          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', marginTop: '2rem' }}>
+            No audit logs found.
+          </p>
+        )}
       </div>
     </div>
   );

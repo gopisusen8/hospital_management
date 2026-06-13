@@ -1,29 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { api } from 'common';
 
 export default function MakePayment() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const billId = location.state?.billId || 101;
-  const amount = location.state?.amount || 150.0;
+  const billId = location.state?.billId || '';
+  const amount = location.state?.amount || 0.0;
   
   const [method, setMethod] = useState('UPI');
+  const [payment, setPayment] = useState(null);
   const [success, setSuccess] = useState(false);
   const [txId, setTxId] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handlePay = (e) => {
+  // Initiate payment record on backend
+  useEffect(() => {
+    if (!billId) return;
+    
+    api.post(`/payments/initiate/${billId}?method=${method}`)
+      .then(res => setPayment(res.data))
+      .catch(err => console.error('Error initiating payment:', err));
+  }, [billId, method]);
+
+  const handlePay = async (e) => {
     e.preventDefault();
-    setSuccess(true);
-    setTimeout(() => {
-      navigate('/billing-history');
-    }, 2000);
+    if (!payment?.id) return;
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      const mockTx = txId || 'TXN-' + Math.floor(Math.random() * 10000000);
+      await api.post(`/payments/confirm/${payment.id}`, { transactionId: mockTx });
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/billing-history');
+      }, 2000);
+    } catch (err) {
+      setError('Error confirming payment. Please verify your reference number.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (!billId) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
+        No invoice selected for payment. Please go to <a href="/billing-history" style={{ color: '#00f2fe' }}>Billing History</a>.
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <div className="glass-panel" style={{ textAlign: 'center' }}>
         <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2rem', marginTop: 0, marginBottom: '1.5rem' }}>Make Payment</h1>
+
+        {error && (
+          <div style={{
+            background: 'rgba(255, 23, 68, 0.1)',
+            border: '1px solid rgba(255, 23, 68, 0.3)',
+            borderRadius: '8px',
+            padding: '0.75rem',
+            color: '#ff1744',
+            marginBottom: '1rem'
+          }}>
+            {error}
+          </div>
+        )}
 
         {success ? (
           <div style={{
@@ -56,11 +103,10 @@ export default function MakePayment() {
               <select value={method} onChange={(e) => setMethod(e.target.value)} style={{ width: '100%' }}>
                 <option value="UPI">Simulate UPI (QR Code)</option>
                 <option value="CARD">Debit / Credit Card</option>
-                <option value="CASH">Cash at Desk</option>
               </select>
             </div>
 
-            {method === 'UPI' && (
+            {method === 'UPI' && payment && (
               <div style={{
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.05)',
@@ -74,7 +120,7 @@ export default function MakePayment() {
                 boxSizing: 'border-box'
               }}>
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=UPI:invoice${billId}`} 
+                  src={payment.qrCodeUrl} 
                   alt="UPI Payment QR Code" 
                   style={{ borderRadius: '8px', border: '4px solid #fff', width: '150px', height: '150px' }}
                 />
@@ -83,7 +129,7 @@ export default function MakePayment() {
                 </p>
                 <input 
                   type="text" 
-                  placeholder="Enter Mock Transaction Reference" 
+                  placeholder="Enter Transaction Reference ID" 
                   style={{ width: '100%', textAlign: 'center' }}
                   value={txId}
                   onChange={(e) => setTxId(e.target.value)}
@@ -92,8 +138,8 @@ export default function MakePayment() {
               </div>
             )}
 
-            <button type="submit" className="btn-primary" style={{ width: '100%' }}>
-              Confirm Mock Payment
+            <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={loading}>
+              {loading ? 'Verifying transaction...' : 'Confirm Simulated Payment'}
             </button>
           </form>
         )}

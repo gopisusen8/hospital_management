@@ -28,4 +28,8 @@ public class PatientRecordService {
     public Optional<PatientRecord> getRecordById(Long id) {
         return patientRecordRepository.findById(id);
     }
+
+    public List<PatientRecord> getAllRecords() {
+        return patientRecordRepository.findAll();
+    }
 }

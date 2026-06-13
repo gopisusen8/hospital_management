@@ -1,17 +1,31 @@
-import React from 'react';
-
-const DUMMY_RECORDS = [
-  { id: 1, date: 'May 04, 2026', doctorName: 'Dr. Anita Patel', diagnosis: 'Acute Bronchitis', notes: 'Patient presented with dry cough and mild congestion. Recommended hydration and rest.', report: 'Chest_XRay_Report.pdf' },
-  { id: 2, date: 'Oct 12, 2025', doctorName: 'Dr. Sarah Jenkins', diagnosis: 'Mild Hypertension', notes: 'Blood pressure slightly elevated. Monitor weekly and limit sodium intake.', report: 'ECG_Analysis.pdf' }
-];
+import React, { useState, useEffect } from 'react';
+import { api, getUser } from 'common';
 
 export default function MedicalRecords() {
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const user = getUser();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    api.get(`/patient-records/patient/${user.id}`)
+      .then(res => {
+        setRecords(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching patient records:', err);
+        setLoading(false);
+      });
+  }, [user?.id]);
+
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '1.5rem' }}>Medical Records</h1>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {DUMMY_RECORDS.map(rec => (
+        {records.map(rec => (
           <div key={rec.id} className="glass-card">
             <div style={{
               display: 'flex',
@@ -24,41 +38,24 @@ export default function MedicalRecords() {
               <div>
                 <h3 style={{ margin: 0, color: '#00f2fe' }}>{rec.diagnosis}</h3>
                 <p style={{ margin: '0.25rem 0 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
-                  Consultation with {rec.doctorName}
+                  Consultation with Dr. {rec.doctor.user.firstName} {rec.doctor.user.lastName}
                 </p>
               </div>
-              <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{rec.date}</span>
+              <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
+                {new Date(rec.visitDate).toLocaleDateString()}
+              </span>
             </div>
 
             <p style={{ fontSize: '0.95rem', margin: '0.5rem 0', color: 'rgba(255,255,255,0.8)' }}>
               <strong>Notes:</strong> {rec.notes}
             </p>
-
-            {rec.report && (
-              <div style={{
-                marginTop: '1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.5rem 0.75rem',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                borderRadius: '8px',
-                width: 'fit-content'
-              }}>
-                <span style={{ fontSize: '1.1rem' }}>📄</span>
-                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>{rec.report}</span>
-                <a 
-                  href={`/reports/${rec.report}`} 
-                  onClick={(e) => { e.preventDefault(); alert(`Downloading simulated file: ${rec.report}`); }} 
-                  style={{ color: '#00f2fe', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', marginLeft: '1rem' }}
-                >
-                  Download
-                </a>
-              </div>
-            )}
           </div>
         ))}
+        {records.length === 0 && (
+          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', marginTop: '2rem' }}>
+            No clinical records logged.
+          </p>
+        )}
       </div>
     </div>
   );

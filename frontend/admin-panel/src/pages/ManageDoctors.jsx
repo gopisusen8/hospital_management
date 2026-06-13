@@ -1,37 +1,144 @@
-import React, { useState } from 'react';
-
-const INITIAL_DOCTORS = [
-  { id: 1, name: 'Dr. Sarah Jenkins', specialization: 'Cardiology', department: 'Cardiology Center', status: 'Active' },
-  { id: 2, name: 'Dr. Marcus Vance', specialization: 'Neurology', department: 'Neurology & Brain Center', status: 'Active' },
-  { id: 3, name: 'Dr. Anita Patel', specialization: 'Pediatrics', department: 'Children Health Wing', status: 'On Leave' }
-];
+import React, { useState, useEffect } from 'react';
+import { api } from 'common';
 
 export default function ManageDoctors() {
-  const [doctors, setDoctors] = useState(INITIAL_DOCTORS);
-  const [name, setName] = useState('');
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Form fields
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [spec, setSpec] = useState('');
   const [dept, setDept] = useState('');
 
-  const handleAdd = (e) => {
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/doctors');
+      setDoctors(res.data);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load doctors list.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async (e) => {
     e.preventDefault();
-    if (!name || !spec || !dept) return;
+    setError('');
+    setSuccess('');
 
-    setDoctors(prev => [
-      ...prev,
-      { id: Date.now(), name, specialization: spec, department: dept, status: 'Active' }
-    ]);
-    setName('');
-    setSpec('');
-    setDept('');
+    try {
+      // 1. Register user
+      await api.post('/auth/register', {
+        username,
+        password,
+        email,
+        role: 'ROLE_DOCTOR',
+        firstName,
+        lastName,
+        phone
+      });
+
+      // 2. Fetch updated doctors list to find the newly registered doctor record
+      const res = await api.get('/doctors');
+      const newDoc = res.data.find(d => d.user?.username === username);
+
+      if (newDoc) {
+        // 3. Update their specialization, department, and set a default fee
+        await api.put(`/doctors/${newDoc.id}`, {
+          specialization: spec,
+          department: dept,
+          consultationFee: 150.0
+        });
+      }
+
+      setSuccess(`Provider Dr. ${firstName} ${lastName} registered successfully!`);
+      
+      // Clear form
+      setUsername('');
+      setPassword('');
+      setEmail('');
+      setFirstName('');
+      setLastName('');
+      setPhone('');
+      setSpec('');
+      setDept('');
+
+      // Refresh list
+      fetchDoctors();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to onboard doctor.');
+      console.error(err);
+    }
   };
 
-  const handleDelete = (id) => {
-    setDoctors(prev => prev.filter(doc => doc.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this doctor and their user account?')) {
+      return;
+    }
+    try {
+      await api.delete(`/doctors/${id}`);
+      setDoctors(prev => prev.filter(doc => doc.id !== id));
+      setSuccess('Doctor removed successfully.');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete doctor.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
+        Loading providers list...
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1100px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '1.5rem' }}>Manage Doctors</h1>
+
+      {error && (
+        <div style={{
+          background: 'rgba(255, 23, 68, 0.1)',
+          border: '1px solid rgba(255, 23, 68, 0.3)',
+          borderRadius: '8px',
+          padding: '0.75rem',
+          color: '#ff1744',
+          marginBottom: '1.5rem',
+          fontSize: '0.9rem',
+          textAlign: 'center'
+        }}>
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div style={{
+          background: 'rgba(0, 230, 118, 0.1)',
+          border: '1px solid rgba(0, 230, 118, 0.4)',
+          borderRadius: '8px',
+          padding: '0.75rem',
+          color: '#00e676',
+          marginBottom: '1.5rem',
+          fontSize: '0.9rem',
+          textAlign: 'center'
+        }}>
+          {success}
+        </div>
+      )}
 
       <div style={{
         display: 'grid',
@@ -43,14 +150,40 @@ export default function ManageDoctors() {
         <div className="glass-panel">
           <h3 style={{ margin: '0 0 1.25rem 0', color: '#ba68c8' }}>Onboard Provider</h3>
           <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <label style={{ fontSize: '0.85rem' }}>First Name</label>
+                <input type="text" placeholder="Jane" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <label style={{ fontSize: '0.85rem' }}>Last Name</label>
+                <input type="text" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              <label style={{ fontSize: '0.85rem' }}>Full Name</label>
-              <input type="text" placeholder="Dr. Jane Doe" value={name} onChange={(e) => setName(e.target.value)} required />
+              <label style={{ fontSize: '0.85rem' }}>Username</label>
+              <input type="text" placeholder="doctor2" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label style={{ fontSize: '0.85rem' }}>Password</label>
+              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label style={{ fontSize: '0.85rem' }}>Email</label>
+              <input type="email" placeholder="doctor2@careflow.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label style={{ fontSize: '0.85rem' }}>Phone</label>
+              <input type="text" placeholder="+15550001234" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ fontSize: '0.85rem' }}>Specialization</label>
-              <input type="text" placeholder="e.g. Cardiology" value={spec} onChange={(e) => setSpec(e.target.value)} required />
+              <input type="text" placeholder="e.g. Pediatrics" value={spec} onChange={(e) => setSpec(e.target.value)} required />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -77,7 +210,9 @@ export default function ManageDoctors() {
                 borderRadius: '8px'
               }}>
                 <div>
-                  <h4 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>{doc.name}</h4>
+                  <h4 style={{ margin: 0, fontFamily: 'Outfit, sans-serif' }}>
+                    Dr. {doc.user?.firstName} {doc.user?.lastName}
+                  </h4>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#ba68c8' }}>
                     {doc.specialization} - <span style={{ color: 'rgba(255,255,255,0.5)' }}>{doc.department}</span>
                   </p>
@@ -96,6 +231,9 @@ export default function ManageDoctors() {
                 </button>
               </div>
             ))}
+            {doctors.length === 0 && (
+              <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>No active providers found.</p>
+            )}
           </div>
         </div>
       </div>

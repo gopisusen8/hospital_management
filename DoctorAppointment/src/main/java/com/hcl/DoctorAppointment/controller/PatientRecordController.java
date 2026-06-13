@@ -23,4 +23,9 @@ public class PatientRecordController {
     public ResponseEntity<PatientRecord> createRecord(@RequestBody PatientRecord record) {
         return ResponseEntity.ok(patientRecordService.createRecord(record));
     }
+
+    @GetMapping
+    public List<PatientRecord> getAllRecords() {
+        return patientRecordService.getAllRecords();
+    }
 }

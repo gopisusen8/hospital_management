@@ -1,10 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from 'common';
 
 export default function Dashboard() {
-  const totalBeds = 150;
-  const occupiedBeds = 98;
-  const occupancyPercentage = ((occupiedBeds / totalBeds) * 100).toFixed(1);
+  const [stats, setStats] = useState({
+    totalBeds: 150,
+    occupiedBeds: 0,
+    occupancyPercentage: 0,
+    icuOccupied: 0,
+    emergencyOccupied: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/occupancy-stats');
+      setStats(res.data);
+    } catch (err) {
+      console.error('Failed to load occupancy stats', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const occupancyPercentage = Number(stats.occupancyPercentage).toFixed(1);
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -23,21 +47,27 @@ export default function Dashboard() {
         {/* Real-time Occupancy Card */}
         <div className="glass-card" style={{ gridColumn: 'span 2' }}>
           <h3 style={{ marginTop: 0, color: '#ba68c8' }}>Real-time Bed Occupancy</h3>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>{occupancyPercentage}%</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem' }}>
-              {occupiedBeds} / {totalBeds} Beds Filled
-            </span>
-          </div>
-          {/* Progress Bar */}
-          <div style={{ width: '100%', height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ width: `${occupancyPercentage}%`, height: '100%', background: 'linear-gradient(90deg, #ba68c8 0%, #da8ae8 100%)', borderRadius: '6px' }}></div>
-          </div>
-          <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1.25rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
-            <div>🔴 ICU: 12/15 Beds</div>
-            <div>🟡 Emergency: 8/20 Beds</div>
-            <div>🟢 General: 78/115 Beds</div>
-          </div>
+          {loading ? (
+            <p style={{ color: 'rgba(255,255,255,0.5)' }}>Loading telemetry...</p>
+          ) : (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>{occupancyPercentage}%</span>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem' }}>
+                  {stats.occupiedBeds} / {stats.totalBeds} Beds Filled
+                </span>
+              </div>
+              {/* Progress Bar */}
+              <div style={{ width: '100%', height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ width: `${occupancyPercentage}%`, height: '100%', background: 'linear-gradient(90deg, #ba68c8 0%, #da8ae8 100%)', borderRadius: '6px' }}></div>
+              </div>
+              <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1.25rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+                <div>🔴 ICU: {stats.icuOccupied}/15 Beds</div>
+                <div>🟡 Emergency: {stats.emergencyOccupied}/20 Beds</div>
+                <div>🟢 General: {stats.occupiedBeds - stats.icuOccupied - stats.emergencyOccupied}/115 Beds</div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Quick Audit Snapshot Card */}

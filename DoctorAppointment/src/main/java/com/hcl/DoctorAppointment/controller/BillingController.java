@@ -19,6 +19,11 @@ public class BillingController {
         return billingService.getBillsByPatient(patientId);
     }
 
+    @GetMapping
+    public List<Bill> getAllBills() {
+        return billingService.getAllBills();
+    }
+
     @PostMapping
     public ResponseEntity<Bill> createBill(@RequestBody Bill bill) {
         return ResponseEntity.ok(billingService.createBill(bill));
