@@ -43,3 +43,7 @@ Thumbs.db
 # Crash logs
 hs_err_pid*
 replay_pid*
+
+# Local H2 Database files
+*.mv.db
+*.trace.db

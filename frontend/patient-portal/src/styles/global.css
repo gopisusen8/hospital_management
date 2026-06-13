@@ -11,6 +11,28 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Theme variables - Default (Patient: Cyan) */
+  --primary-color: #00f2fe;
+  --primary-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  --primary-shadow: rgba(0, 242, 254, 0.3);
+  --primary-shadow-hover: rgba(0, 242, 254, 0.5);
+}
+
+/* Theme variables - Doctor (Green) */
+:root[data-role="ROLE_DOCTOR"] {
+  --primary-color: #00e676;
+  --primary-gradient: linear-gradient(135deg, #00e676 0%, #66bb6a 100%);
+  --primary-shadow: rgba(0, 230, 118, 0.3);
+  --primary-shadow-hover: rgba(0, 230, 118, 0.5);
+}
+
+/* Theme variables - Admin (Purple) */
+:root[data-role="ROLE_ADMIN"] {
+  --primary-color: #ba68c8;
+  --primary-gradient: linear-gradient(135deg, #ba68c8 0%, #da8ae8 100%);
+  --primary-shadow: rgba(186, 104, 200, 0.3);
+  --primary-shadow-hover: rgba(186, 104, 200, 0.5);
 }
 
 body {
@@ -53,8 +75,8 @@ body {
 
 .glass-card:hover {
   transform: translateY(-5px);
-  border-color: rgba(0, 242, 254, 0.3);
-  box-shadow: 0 10px 20px rgba(0, 242, 254, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 10px 20px var(--primary-shadow);
 }
 
 /* Input Styles */
@@ -71,13 +93,13 @@ input, select, textarea {
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #00f2fe;
-  box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-shadow);
 }
 
 /* Button Styles */
 .btn-primary {
-  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  background: var(--primary-gradient);
   color: #000;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -85,13 +107,13 @@ input:focus, select:focus, textarea:focus {
   font-weight: 600;
   font-family: 'Outfit', sans-serif;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+  box-shadow: 0 4px 15px var(--primary-shadow);
   transition: transform 0.1s, box-shadow 0.2s;
 }
 
 .btn-primary:hover {
   transform: scale(1.02);
-  box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
+  box-shadow: 0 6px 20px var(--primary-shadow-hover);
 }
 
 .btn-primary:active {
