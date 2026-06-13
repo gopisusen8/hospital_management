@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Navbar, Footer, ProtectedRoute, login, api } from 'common';
+import { Navbar, Footer, ProtectedRoute, login, api, Profile } from 'common';
 
 // Import Pages
 import Dashboard from './pages/Dashboard';
@@ -29,7 +29,10 @@ function LoginScreen() {
       login(response.data.token, response.data.role, {
         id: response.data.id,
         username: response.data.username,
-        email: response.data.email
+        email: response.data.email,
+        firstName: response.data.firstName,
+        lastName: response.data.lastName,
+        phone: response.data.phone
       });
       navigate('/dashboard');
     } catch (err) {
@@ -122,6 +125,11 @@ export default function App() {
             <Route path="/reports" element={
               <ProtectedRoute allowedRoles={['ROLE_ADMIN']}>
                 <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute allowedRoles={['ROLE_ADMIN']}>
+                <Profile themeColor="#ba68c8" />
               </ProtectedRoute>
             } />
           </Routes>

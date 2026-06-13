@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Navbar, Footer, ProtectedRoute, login, api } from 'common';
+import { Navbar, Footer, ProtectedRoute, login, api, Profile } from 'common';
 
 // Import Pages
 import Dashboard from './pages/Dashboard';
@@ -37,6 +37,9 @@ function LoginScreen() {
         id: response.data.id,
         username: response.data.username,
         email: response.data.email,
+        firstName: response.data.firstName,
+        lastName: response.data.lastName,
+        phone: response.data.phone,
         doctorId: doctorRes.data.id,
         doctorInfo: doctorRes.data
       });
@@ -131,6 +134,11 @@ export default function App() {
             <Route path="/my-schedule" element={
               <ProtectedRoute allowedRoles={['ROLE_DOCTOR']}>
                 <MySchedule />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute allowedRoles={['ROLE_DOCTOR']}>
+                <Profile themeColor="#00e676" />
               </ProtectedRoute>
             } />
           </Routes>

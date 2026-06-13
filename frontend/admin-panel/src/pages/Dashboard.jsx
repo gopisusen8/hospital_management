@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from 'common';
+import { api, getUser } from 'common';
 
 export default function Dashboard() {
+  const user = getUser();
+  const greeting = user ? `${user.firstName} ${user.lastName}` : 'Administrator';
+
   const [stats, setStats] = useState({
     totalBeds: 150,
     occupiedBeds: 0,
@@ -32,7 +35,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '0.5rem' }}>Hospital Control Center</h1>
+      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '0.5rem' }}>Welcome, {greeting}!</h1>
       <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
         Real-time occupancy telemetry, doctor logs, billing totals, and security audits.
       </p>

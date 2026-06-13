@@ -49,6 +49,7 @@ export default function Navbar({ portalName }) {
         <Link to={role ? "/dashboard" : "/"} style={{ color: '#fff', textDecoration: 'none', fontSize: '0.95rem', transition: 'color 0.2s' }}>Home</Link>
         {role && (
           <>
+            <Link to="/profile" style={{ color: '#fff', textDecoration: 'none', fontSize: '0.95rem', transition: 'color 0.2s' }}>Profile</Link>
             <span style={{
               fontSize: '0.8rem',
               padding: '0.25rem 0.6rem',

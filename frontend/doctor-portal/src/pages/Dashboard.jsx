@@ -1,10 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { getUser } from 'common';
 
 export default function Dashboard() {
+  const user = getUser();
+  const greeting = user ? `Dr. ${user.firstName} ${user.lastName}` : 'Clinician';
+
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '0.5rem' }}>Clinical Dashboard</h1>
+      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '0.5rem' }}>Welcome, {greeting}!</h1>
       <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
         Manage patient consults, write prescriptions, and adjust your availability slots.
       </p>

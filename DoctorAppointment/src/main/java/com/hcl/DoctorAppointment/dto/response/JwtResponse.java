@@ -3,7 +3,6 @@ package com.hcl.DoctorAppointment.dto.response;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import java.util.List;
 
 @Getter
 @Setter
@@ -15,4 +14,7 @@ public class JwtResponse {
     private String username;
     private String email;
     private String role;
+    private String firstName;
+    private String lastName;
+    private String phone;
 }
